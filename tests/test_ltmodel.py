@@ -127,3 +127,36 @@ def test_cli_install_from_file_end_to_end(libs, tmp_path, capsys):
     assert rc == 0
     assert "provenance: vendor" in (libs.cmp / "standard.bjt").read_text()
     assert cli.main(["--lib-dir", str(libs.root), "find", "2N3904"]) == 0
+
+
+def test_metadata_defaults_mfg_to_provenance_and_keeps_model_valid(libs):
+    d = parse_definitions(NEW_NPN)[0]
+    text = install.with_metadata(d, "community")
+    assert text.endswith("mfg=community)")
+    reparsed = parse_definitions(text)[0]
+    assert reparsed.params["mfg"] == "community" and reparsed.number("bf") == 416
+    assert "vceo" not in text.lower()  # never invent ratings
+
+
+def test_metadata_adds_ratings_for_bjt_only_and_never_overwrites():
+    npn = parse_definitions(NEW_NPN)[0]
+    text = install.with_metadata(npn, "derived", {"mfg": "NXP", "vceo": "45", "icrating": "100m"})
+    assert "mfg=NXP" in text and "Vceo=45" in text and "Icrating=100m" in text
+    again = install.with_metadata(parse_definitions(text)[0], "derived", {"mfg": "Other", "vceo": "99"})
+    assert again == text  # existing values win
+    jfet = parse_definitions(".model J1 NJF(Vto=-2 Beta=1m)")[0]
+    assert "Vceo" not in install.with_metadata(jfet, "derived", {"vceo": "45"})
+
+
+def test_metadata_handles_model_without_parentheses():
+    d = parse_definitions(".model D1N NPN IS=1f BF=100")[0]
+    assert install.with_metadata(d, "derived", {"mfg": "X"}).endswith("BF=100 mfg=X")
+
+
+def test_cli_metadata_flags_land_in_library(libs, tmp_path):
+    f = tmp_path / "m.lib"
+    f.write_text(NEW_NPN)
+    cli.main(["--lib-dir", str(libs.root), "install", "2N3904", "--from", str(f), "--pick", "1",
+              "--kind", "vendor", "--mfg", "onsemi", "--vceo", "40", "--icrating", "200m"])
+    d = scan.scan(libs, "2N3904")[0].definition
+    assert d.params["mfg"] == "onsemi" and d.params["Vceo"] == "40" and d.params["Icrating"] == "200m"

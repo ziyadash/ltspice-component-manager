@@ -78,8 +78,10 @@ def cmd_install(args, libs) -> int:
         return 2
     kind = args.kind or cand.kind
     try:
+        meta = {k: v for k, v in (("mfg", args.mfg), ("vceo", args.vceo),
+                                  ("icrating", args.icrating)) if v}
         report = installer.install(libs, cand.definition, cand.origin, kind,
-                                   force=args.force, dry_run=args.dry_run)
+                                   force=args.force, dry_run=args.dry_run, meta=meta)
     except FileExistsError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -143,6 +145,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--pick", type=int, help="candidate number to install (non-interactive)")
     s.add_argument("--kind", choices=["vendor", "community", "derived", "user-supplied"],
                    help="provenance tag written next to the model")
+    s.add_argument("--mfg", help="manufacturer shown in LTspice's part picker "
+                                 "(default: the provenance tag, e.g. 'community')")
+    s.add_argument("--vceo", help="BJT Vceo rating for the picker, e.g. 45")
+    s.add_argument("--icrating", help="BJT max collector current for the picker, e.g. 100m")
     s.add_argument("--force", action="store_true", help="install even if already present")
     s.add_argument("--dry-run", action="store_true", help="show what would change, write nothing")
     s.set_defaults(fn=cmd_install)

@@ -75,13 +75,41 @@ def _read(path: Path) -> tuple[str, str, str]:
     return text.replace("\r\n", "\n"), enc, eol
 
 
+def with_metadata(d: Definition, kind: str, meta: dict[str, str] | None = None) -> str:
+    """Model text with the fields LTspice's part picker shows (mfg, Vceo, Icrating).
+
+    Existing values in the model are never overwritten. `mfg` defaults to the
+    provenance tag so the picker shows where a model came from; Vceo/Icrating
+    are only added when you supply them (we never invent ratings).
+    """
+    meta = dict(meta or {})
+    meta.setdefault("mfg", kind.replace("-", "_"))
+    wanted = {"mfg": meta["mfg"]}
+    if d.mtype in {"NPN", "PNP"}:
+        for key, canon in (("vceo", "Vceo"), ("icrating", "Icrating")):
+            if key in {k.lower() for k in meta}:
+                wanted[canon] = next(v for k, v in meta.items() if k.lower() == key)
+
+    text = d.text.rstrip()
+    missing = [f"{k}={v}" for k, v in wanted.items()
+               if not re.search(rf"\b{k}\s*=", text, re.I)]
+    if not missing:
+        return text
+    extra = " ".join(missing)
+    if "(" in text and text.endswith(")"):
+        return f"{text[:-1]} {extra})"
+    return f"{text} {extra}"
+
+
 def install(libs: LibDirs, d: Definition, origin: str, kind: str,
-            force: bool = False, dry_run: bool = False) -> Report:
-    return (_install_subckt if d.kind == "subckt" else _install_model)(
-        libs, d, origin, kind, force, dry_run)
+            force: bool = False, dry_run: bool = False,
+            meta: dict[str, str] | None = None) -> Report:
+    if d.kind == "subckt":
+        return _install_subckt(libs, d, origin, kind, force, dry_run)
+    return _install_model(libs, d, origin, kind, force, dry_run, meta)
 
 
-def _install_model(libs, d, origin, kind, force, dry_run) -> Report:
+def _install_model(libs, d, origin, kind, force, dry_run, meta=None) -> Report:
     report = Report()
     fname = STANDARD_FILE.get(d.mtype)
     if fname is None:  # unusual type: keep it in its own file, user must .include it
@@ -100,7 +128,7 @@ def _install_model(libs, d, origin, kind, force, dry_run) -> Report:
         raise FileExistsError(f"{d.name} was already installed by ltmodel in {path} (use --force)")
 
     begin, end = _markers(d.name)
-    block = f"{begin}\n{_header(origin, kind)}{d.text.strip()}\n{end}\n"
+    block = f"{begin}\n{_header(origin, kind)}{with_metadata(d, kind, meta)}\n{end}\n"
     if existing:
         new = text[:existing.start()] + block + text[existing.end():]
     else:

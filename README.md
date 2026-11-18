@@ -29,6 +29,12 @@ Add `--dry-run` to any install/uninstall to see what would change without writin
    - `.subckt`: written to `lib/sub/NAME.lib` with a generated symbol in
      `lib/sym/ltmodel/NAME.asy` (pins in netlist order; press F2 and browse to
      the `ltmodel` folder).
+   LTspice's "Pick New Transistor" dialog builds its Manufacturer / Vceo / Ic
+   columns from `mfg=`, `Vceo=` and `Icrating=` in the model. `install` adds
+   `mfg=` (defaults to the provenance tag, e.g. `community`, so the picker shows
+   how far to trust it) and, if you pass `--vceo 45 --icrating 100m`, the
+   ratings. Existing values in a model are never overwritten and ratings are
+   never invented. Use `--mfg onsemi` to set the manufacturer yourself.
 4. **Provenance**: every install gets `source` / `provenance` / date comment
    lines. Tags: `vendor`, `community`, `derived`, `user-supplied`.
 
