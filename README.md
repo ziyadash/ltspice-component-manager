@@ -65,3 +65,8 @@ Override with `--lib-dir` or `$LTSPICE_LIB`. `ltmodel where` shows what it found
 ```bash
 uv run --with pytest python -m pytest
 ```
+
+## Examples
+
+`examples/2n5486_derived.lib` has datasheet-derived 2N5486 JFET models (nominal
+plus low/high IDSS corners) as a sample `--from` file.
