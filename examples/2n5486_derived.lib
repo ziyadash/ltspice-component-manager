@@ -1,0 +1,14 @@
+* 2N5486 JFET models DERIVED from datasheet numbers (not vendor models).
+*
+* Why: LTspice's shipped 2N5486 (Vto=-4, Beta=4.0m) works out to IDSS =
+* Beta*Vto^2 = 64 mA, against a datasheet range of 8-20 mA.
+*
+* Datasheet inputs: IDSS 8..20 mA, Vgs(off) -2..-6 V (verify), gfs 3.5..7 mS,
+* Ciss ~5 pF, Crss ~1 pF.  Beta = IDSS/Vto^2, Cgd = Crss, Cgs = Ciss - Crss.
+* Lambda = 10m is a guess; fit it to output curves if it matters.
+*
+* Install:  ltmodel install J2N5486 --from examples/2n5486_derived.lib --kind derived
+* Verify:   ltmodel check J2N5486 --idss 8m 20m
+.model J2N5486    NJF(Vto=-4 Beta=0.875m Lambda=10m Cgs=4p Cgd=1p Is=10f Rd=10 Rs=10) ; IDSS ~14 mA nominal
+.model J2N5486_lo NJF(Vto=-3 Beta=0.889m Lambda=10m Cgs=4p Cgd=1p Is=10f Rd=10 Rs=10) ; IDSS ~8 mA
+.model J2N5486_hi NJF(Vto=-6 Beta=0.55m Lambda=10m Cgs=4p Cgd=1p Is=10f Rd=10 Rs=10) ; IDSS ~19.8 mA

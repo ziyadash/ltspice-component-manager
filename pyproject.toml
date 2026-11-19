@@ -1,0 +1,23 @@
+[project]
+name = "ltmodel"
+version = "0.1.0"
+description = "Look up, fetch and install SPICE models and symbols into LTspice's library folders"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+ltmodel = "ltmodel.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ltmodel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
